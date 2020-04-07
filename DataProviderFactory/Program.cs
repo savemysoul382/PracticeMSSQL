@@ -1,6 +1,7 @@
 ﻿using System;
-using System.Data.SqlClient;
+using System.Linq;
 using DataProviderFactory.DataOperations;
+using DataProviderFactory.Models;
 using static System.Console;
 
 namespace DataProviderFactory
@@ -11,47 +12,49 @@ namespace DataProviderFactory
         {
             WriteLine(value: "**** Test with Data Readers ****\n");
 
-            // Создать строку подключения с помощью объекта построителя.
-            var cn_string_builder = new SqlConnectionStringBuilder
+            InventoryDAL dal = new InventoryDAL();
+            var list = dal.GetAllInventory();
+            Console.WriteLine(" ************** Аll cars **********");
+            Console.WriteLine("CarId\tMake\tColor\tPet Name");
+            foreach (var itm in list)
             {
-                InitialCatalog = "AutoLot",
-                DataSource = @"(localdb)\mssqllocaldb",
-                ConnectTimeout = 30,
-                IntegratedSecurity = true
-            };
-
-            using (SqlConnection connection = new SqlConnection())
-            {
-                connection.ConnectionString = cn_string_builder.ConnectionString;
-                connection.Open();
-                ShowConnectionStatus(connection);
-                // Создать объект команды SQL.
-                String sql = "Select * From Inventory";
-                SqlCommand my_command = new SqlCommand(sql, connection);
-                // Получить объект чтения данных с помощью ExecuteReader().
-                using (SqlDataReader data_reader = my_command.ExecuteReader())
-                {
-                    // Пройти в цикле по результатам,
-                    while (data_reader.Read())
-                    {
-                        WriteLine($"->Make: {data_reader["Make"]}, PetName: {data_reader["PetName"]},Color:{data_reader["Color"]}.");
-                    }
-                }
+                Console.WriteLine($" {itm.CarId} \t {itm.Make} \t {itm.Color} \t {itm.PetName} ");
             }
 
-            InventoryDAL inventory_dal = new InventoryDAL();
-            String look_up_pet_name = inventory_dal.LookUpPetName(1);
-            ReadLine();
-        }
+            Console.WriteLine();
+            var car = dal.GetCar(list.OrderBy(x => x.Color).Select(x => x.CarId).First());
+            Console.WriteLine(" ************** First Car By Color ************** ");
+            Console.WriteLine("CarId\tMake\tColor\tPet Name");
+            Console.WriteLine($"{car.CarId}\t{car.Make}\t{car.Color}\t{car.PetName}");
+            try
+            {
+                dal.DeleteCar(5);
+                Console.WriteLine("Car deleted.");
+                // Запись об автомобиле удалена
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An exception occurred: {ex.Message}");
+                // Возникло исключение
+            }
 
-        private static void ShowConnectionStatus(SqlConnection connection)
-        {
-            // Вывести различные сведения о текущем объекте подключения.
-            WriteLine("*****Info about your connection * ****");
-            WriteLine($"Database location: {connection.DataSource}"); // Местоположение базы данных
-            WriteLine($"Database name: {connection.Database}"); // Имя базы данных
-            WriteLine($"Timeout: {connection.ConnectionTimeout}"); // Таймаут
-            WriteLine($"Connection state: {connection.State}\n"); // Состояние
+            dal.InsertAuto(
+                car: new Car
+                {
+                    Color = "Blue", Make = "Pilot", PetName = "TowMonster"
+                });
+            list = dal.GetAllInventory();
+            var new_car = list.First(x => x.PetName.Trim() == "TowMonster");
+            Console.WriteLine(" ************** New Car ************** ");
+            Console.WriteLine("CarId\tMake\tColor\tPet Name");
+            Console.WriteLine($"{new_car.CarId}\t{new_car.Make}\t{new_car.Color}\t{new_car.PetName}");
+            dal.DeleteCar(new_car.CarId);
+            var petName = dal.LookUpPetName(car.CarId);
+            Console.WriteLine(" ************** New Car ************** ");
+            Console.WriteLine($"Car pet name: {petName}");
+            Console.Write("Press enter to continue...");
+            // Для продолжения нажмите <Enter>...
+            Console.ReadLine();
         }
     }
 }
