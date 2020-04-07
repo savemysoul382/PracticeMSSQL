@@ -140,56 +140,84 @@ namespace DataProviderFactory.DataOperations
         {
             OpenConnection();
             // Сформатировать и выполнить оператор SQL.
-            String sql = "Insert Into Inventory (Make, Color, PetName) Values " + $"(’{car.Make}', '{car.Color}', ’{car.PetName}')";
+            String sql = "Insert Into Inventory" +
+                         "(Make, Color, PetName) Values" +
+                         "(@Make, @Color, @PetName)";
             // Выполнить, используя наше подключение.
             using (SqlCommand command = new SqlCommand(cmdText: sql, connection: this.sql_connection))
             {
-                command.CommandType = CommandType.Text;
-                command.ExecuteNonQuery();
-            }
+                // Заполнить коллекцию параметров.
+                SqlParameter parameter = new SqlParameter
+                {
+                    ParameterName = "@Make",
+                    Value = car.Make,
+                    SqlDbType = SqlDbType.Char,
+                    Size = 10
+                };
+                command.Parameters.Add(parameter);
 
-            CloseConnection();
+                parameter = new SqlParameter
+                {
+                    ParameterName = "@Color",
+                    Value = car.Color,
+                    SqlDbType = SqlDbType.Char,
+                    Size = 10
+                };
+                command.Parameters.Add(parameter);
+
+                parameter = new SqlParameter
+                {
+                    ParameterName = "@PetName",
+                    Value = car.PetName,
+                    SqlDbType = SqlDbType.Char,
+                    Size = 10
+                };
+                command.Parameters.Add(parameter);
+
+                command.ExecuteNonQuery();
+                CloseConnection();
+            }
         }
 
         public void DeleteCar(Int32 id)
-        {
-            OpenConnection();
-
-            // Получить идентификатор автомобиля, подлежащего удалению,
-            //и удалить запись о нем.
-            String sql = $"Delete from Inventory where CarId = '{id}'";
-            using (SqlCommand command = new SqlCommand(cmdText: sql, connection: this.sql_connection))
             {
-                try
+                OpenConnection();
+
+                // Получить идентификатор автомобиля, подлежащего удалению,
+                //и удалить запись о нем.
+                String sql = $"Delete from Inventory where CarId = '{id}'";
+                using (SqlCommand command = new SqlCommand(cmdText: sql, connection: this.sql_connection))
                 {
-                    command.CommandType = CommandType.Text;
+                    try
+                    {
+                        command.CommandType = CommandType.Text;
+                        command.ExecuteNonQuery();
+                    }
+                    catch (SqlException ex)
+                    {
+                        Exception error = new Exception(message: "Sorry! That car is on order!", innerException: ex);
+                        // Этот автомобиль заказан!
+                        throw error;
+                    }
+                }
+
+                CloseConnection();
+            }
+
+
+            public void UpdateCarPetName(Int32 id, String new_pet_name)
+            {
+                OpenConnection();
+                // Получить идентификатор автомобиля для модификации дружественного имени,
+                String sql = $"Update Inventory Set PetName = '{new_pet_name}' Where CarId = ’{id}'";
+                using (SqlCommand command = new SqlCommand(cmdText: sql, connection: this.sql_connection))
+                {
                     command.ExecuteNonQuery();
                 }
-                catch (SqlException ex)
-                {
-                    Exception error = new Exception(message: "Sorry! That car is on order!", innerException: ex);
-                    // Этот автомобиль заказан!
-                    throw error;
-                }
+
+                CloseConnection();
             }
 
-            CloseConnection();
+            #endregion
         }
-
-
-        public void UpdateCarPetName(Int32 id, String new_pet_name)
-        {
-            OpenConnection();
-            // Получить идентификатор автомобиля для модификации дружественного имени,
-            String sql = $"Update Inventory Set PetName = '{new_pet_name}' Where CarId = ’{id}'";
-            using (SqlCommand command = new SqlCommand(cmdText: sql, connection: this.sql_connection))
-            {
-                command.ExecuteNonQuery();
-            }
-
-            CloseConnection();
-        }
-
-        #endregion
-        }
-}
+    }
