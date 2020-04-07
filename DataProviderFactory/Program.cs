@@ -8,12 +8,21 @@ namespace DataProviderFactory
     {
         static void Main(String[] args)
         {
-            WriteLine(value: "**** Test with Data Provider Factories ****\n");
+            WriteLine(value: "**** Test with Data Readers ****\n");
+
+            // Создать строку подключения с помощью объекта построителя.
+            var cn_string_builder = new SqlConnectionStringBuilder
+            {
+                InitialCatalog = "AutoLot",
+                DataSource = @"(localdb)\mssqllocaldb",
+                ConnectTimeout = 30,
+                IntegratedSecurity = true
+            };
+
             using (SqlConnection connection = new SqlConnection())
             {
-                connection.ConnectionString = @"Data Source=(localdb)\mssqllocaldb;Integrated Security=SSPI;Initial Catalog=AutoLot; Connect Timeout=30;";
+                connection.ConnectionString = cn_string_builder.ConnectionString;
                 connection.Open();
-
                 ShowConnectionStatus(connection);
                 // Создать объект команды SQL.
                 String sql = "Select * From Inventory";
