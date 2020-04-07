@@ -9,7 +9,6 @@ namespace DataProviderFactory
         static void Main(String[] args)
         {
             WriteLine(value: "**** Test with Data Readers ****\n");
-
             // Создать строку подключения с помощью объекта построителя.
             var cn_string_builder = new SqlConnectionStringBuilder
             {
@@ -25,16 +24,25 @@ namespace DataProviderFactory
                 connection.Open();
                 ShowConnectionStatus(connection);
                 // Создать объект команды SQL.
-                String sql = "Select * From Inventory";
+                String sql = "Select * From Inventory; Select * from Customers";
                 SqlCommand my_command = new SqlCommand(sql, connection);
                 // Получить объект чтения данных с помощью ExecuteReader().
                 using (SqlDataReader data_reader = my_command.ExecuteReader())
                 {
                     // Пройти в цикле по результатам,
-                    while (data_reader.Read())
+                    do
                     {
-                        WriteLine($"->Make: {data_reader["Make"]}, PetName: {data_reader["PetName"]},Color:{data_reader["Color"]}.");
-                    }
+                        while (data_reader.Read())
+                        {
+                            WriteLine("***** Record *****");
+                            for (Int32 i = 0; i < data_reader.FieldCount; i++)
+                            {
+                                WriteLine($"{ data_reader.GetName(i)} = { data_reader.GetValue(i)} ");
+                            }
+                            
+                            WriteLine();
+                        }
+                    } while (data_reader.NextResult());
                 }
             }
 
