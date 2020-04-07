@@ -82,7 +82,7 @@ namespace DataProviderFactory.DataOperations
                     inventory.Add(
                         item: new Car
                         {
-                            CarId = (Int32)data_reader[name: "Carld"],
+                            CarId = (Int32)data_reader[name: "CarId"],
                             Color = (String)data_reader[name: "Color"],
                             Make = (String)data_reader[name: "Make"],
                             PetName = (String)data_reader[name: "PetName"]
@@ -113,9 +113,8 @@ namespace DataProviderFactory.DataOperations
                         Make = (String)data_reader[name: "Make"],
                         PetName = (String)data_reader[name: "PetName"]
                     };
-                    data_reader.Close();
                 }
-
+                data_reader.Close();
                 return car;
             }
         }
