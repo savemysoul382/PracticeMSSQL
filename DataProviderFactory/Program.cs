@@ -11,7 +11,7 @@ namespace DataProviderFactory
             WriteLine(value: "**** Test with Data Provider Factories ****\n");
             using (SqlConnection connection = new SqlConnection())
             {
-                connection.ConnectionString = @"Data Source=(localdb)\mssqllocaldb;Integrated Security=true;Initial Catalog=AutoLot";
+                connection.ConnectionString = @"Data Source=(localdb)\mssqllocaldb;Integrated Security=SSPI;Initial Catalog=AutoLot; Connect Timeout=30;";
                 connection.Open();
                 // Создать объект команды SQL.
                 String sql = "Select * From Inventory";
