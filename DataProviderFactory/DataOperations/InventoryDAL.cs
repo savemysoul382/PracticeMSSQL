@@ -153,7 +153,7 @@ namespace DataProviderFactory.DataOperations
                     SqlDbType = SqlDbType.Char,
                     Size = 10
                 };
-                command.Parameters.Add(parameter);
+                command.Parameters.Add(value: parameter);
 
                 parameter = new SqlParameter
                 {
@@ -162,7 +162,7 @@ namespace DataProviderFactory.DataOperations
                     SqlDbType = SqlDbType.Char,
                     Size = 10
                 };
-                command.Parameters.Add(parameter);
+                command.Parameters.Add(value: parameter);
 
                 parameter = new SqlParameter
                 {
@@ -171,7 +171,7 @@ namespace DataProviderFactory.DataOperations
                     SqlDbType = SqlDbType.Char,
                     Size = 10
                 };
-                command.Parameters.Add(parameter);
+                command.Parameters.Add(value: parameter);
 
                 command.ExecuteNonQuery();
                 CloseConnection();
@@ -217,6 +217,41 @@ namespace DataProviderFactory.DataOperations
                 CloseConnection();
             }
 
-            #endregion
-        }
+
+            public String LookUpPetName(Int32 car_ld)
+            {
+                OpenConnection();
+                String car_pet_name;
+                // Установить имя хранимой процедуры.
+                using (SqlCommand command = new SqlCommand(cmdText: "GetPetName", connection: this.sql_connection))
+                {
+                    command.CommandType = CommandType.StoredProcedure;
+                    // Входной параметр.
+                    SqlParameter param = new SqlParameter
+                    {
+                        ParameterName = "@carId",
+                        SqlDbType = SqlDbType.Int,
+                        Value = car_ld,
+                        Direction = ParameterDirection.Input
+                    };
+                    command.Parameters.Add(value: param);
+                    // Выходной параметр,
+                    param = new SqlParameter
+                    {
+                        ParameterName = "@petName",
+                        SqlDbType = SqlDbType.Char,
+                        Size = 10,
+                        Direction = ParameterDirection.Output
+                    };
+                    command.Parameters.Add(value: param);
+                    // Выполнить хранимую процедуру,
+                    command.ExecuteNonQuery();
+                    // Возвратить выходной параметр.
+                    car_pet_name = (String)command.Parameters[parameterName: "@petName"].Value;
+                    CloseConnection();
+                }
+                return car_pet_name;
+            }
+        #endregion
+    }
     }

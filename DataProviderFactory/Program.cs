@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data.SqlClient;
+using DataProviderFactory.DataOperations;
 using static System.Console;
 
 namespace DataProviderFactory
@@ -38,6 +39,8 @@ namespace DataProviderFactory
                 }
             }
 
+            InventoryDAL inventory_dal = new InventoryDAL();
+            String look_up_pet_name = inventory_dal.LookUpPetName(1);
             ReadLine();
         }
 
