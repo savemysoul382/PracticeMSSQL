@@ -1,6 +1,5 @@
 ﻿using System;
-using System.Configuration;
-using System.Data.Common;
+using System.Data.SqlClient;
 using static System.Console;
 
 namespace DataProviderFactory
@@ -10,47 +9,24 @@ namespace DataProviderFactory
         static void Main(String[] args)
         {
             WriteLine(value: "**** Test with Data Provider Factories ****\n");
-            String data_provider = ConfigurationManager.AppSettings[name: "provider"];
-            String connection_string = ConfigurationManager.AppSettings[name: "connectionString"];
-
-            DbProviderFactory factory = DbProviderFactories.GetFactory(providerInvariantName: data_provider);
-
-            using (DbConnection connection = factory.CreateConnection())
+            using (SqlConnection connection = new SqlConnection())
             {
-                if (connection == null)
-                {
-                    ShowError("Connection");
-                    return;
-                }
-
-                WriteLine($"Your connection object is a: {connection.GetType().Name}");
-                connection.ConnectionString = connection_string;
+                connection.ConnectionString = @"Data Source=(localdb)\mssqllocaldb;Integrated Security=true;Initial Catalog=AutoLot";
                 connection.Open();
-
-                DbCommand command = factory.CreateCommand();
-                if (command == null)
+                // Создать объект команды SQL.
+                String sql = "Select * From Inventory";
+                SqlCommand my_command = new SqlCommand(sql, connection);
+                // Получить объект чтения данных с помощью ExecuteReader().
+                using (SqlDataReader data_reader = my_command.ExecuteReader())
                 {
-                    ShowError("Command");
-                    return;
-                }
-                WriteLine($"Your command object is a: {command.GetType().Name}");
-                command.Connection = connection;
-                command.CommandText = "Select * From Inventory";
-
-                using (DbDataReader data_reader = command.ExecuteReader())
-                {
-                    WriteLine($"Your data reader object is a: {data_reader.GetType().Name}");
-                    WriteLine("\n***** Current Inventory *****");
+                    // Пройти в цикле по результатам,
                     while (data_reader.Read())
-                        WriteLine($"-> Car #{data_reader["CarId"]} is a {data_reader["Make"]}.") ;
+                    {
+                        WriteLine($"->Make: {data_reader["Make"]}, PetName: {data_reader["PetName"]},Color:{data_reader["Color"]}.");
+                    }
                 }
-                ReadLine();
             }
-        }
 
-        private static void ShowError(String object_name)
-        {
-            WriteLine($"There was an issue creating the {object_name}");
             ReadLine();
         }
     }
