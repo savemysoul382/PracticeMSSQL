@@ -13,6 +13,8 @@ namespace DataProviderFactory
             {
                 connection.ConnectionString = @"Data Source=(localdb)\mssqllocaldb;Integrated Security=SSPI;Initial Catalog=AutoLot; Connect Timeout=30;";
                 connection.Open();
+
+                ShowConnectionStatus(connection);
                 // Создать объект команды SQL.
                 String sql = "Select * From Inventory";
                 SqlCommand my_command = new SqlCommand(sql, connection);
@@ -28,6 +30,16 @@ namespace DataProviderFactory
             }
 
             ReadLine();
+        }
+
+        private static void ShowConnectionStatus(SqlConnection connection)
+        {
+            // Вывести различные сведения о текущем объекте подключения.
+            WriteLine("*****Info about your connection * ****");
+            WriteLine($"Database location: {connection.DataSource}"); // Местоположение базы данных
+            WriteLine($"Database name: {connection.Database}"); // Имя базы данных
+            WriteLine($"Timeout: {connection.ConnectionTimeout}"); // Таймаут
+            WriteLine($"Connection state: {connection.State}\n"); // Состояние
         }
     }
 }
