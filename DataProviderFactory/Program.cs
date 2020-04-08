@@ -1,8 +1,8 @@
 ﻿using System;
-using System.Linq;
+using System.Collections.Generic;
+using DataProviderFactory.BulkImport;
 using DataProviderFactory.DataOperations;
 using DataProviderFactory.Models;
-using static System.Console;
 
 namespace DataProviderFactory
 {
@@ -10,24 +10,25 @@ namespace DataProviderFactory
     {
         static void Main(String[] args)
         {
-            Console.WriteLine("***** Simple Transaction Example *****\n");
-            // Простой способ позволить транзакции успешно завершиться или отказать,
-            Boolean throw_ex = true;
-            Console.Write("Do you want to throw an exception (Y or N) : ");
-            // Хотите ли вы сгенерировать исключение?
-            var user_answer = Console.ReadLine();
-            if (user_answer?.ToLower() == "n")
+            Console.WriteLine(" ************** Do Bulk Copy ************** ");
+            var cars = new List<Car>
             {
-                throw_ex = false;
+                new Car() {Color = "Blue", Make = "Honda", PetName = "MyCarl"},
+                new Car() {Color = "Red", Make = "Volvo", PetName = "MyCar2"},
+                new Car() {Color = "White", Make = "VW", PetName = "МуСагЗ"},
+                new Car() {Color = "Yellow", Make = "Toyota", PetName = "MyCar4"}
+            };
+            ProcessBulkImport.ExecuteBulkImport(cars, "Inventory");
+            InventoryDAL dal = new InventoryDAL();
+            var list = dal.GetAllInventory();
+            Console.WriteLine(" ************** All Cars ************** ");
+            Console.WriteLine("CarId\tMake\tColor\tPet Name");
+            foreach (var item in list)
+            {
+                Console.WriteLine($"{item.CarId}\t{item.Make}\t{item.Color}\t{item.PetName}");
             }
 
-            var dal = new InventoryDAL();
-            // Обработать клиента 1 - ввести идентификатор клиента,
-            // подлежащего перемещению.
-            dal.ProcessCreditRisk(throw_ex, 2);
-            Console.WriteLine("Check CreditRisk table for results");
-            // Результаты ищите в таблице CreditRisk
-            Console.ReadLine();
+            Console.WriteLine();
         }
     }
 }
