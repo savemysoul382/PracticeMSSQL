@@ -114,6 +114,7 @@ namespace DataProviderFactory.DataOperations
                         PetName = (String)data_reader[name: "PetName"]
                     };
                 }
+
                 data_reader.Close();
                 return car;
             }
@@ -179,79 +180,140 @@ namespace DataProviderFactory.DataOperations
         }
 
         public void DeleteCar(Int32 id)
+        {
+            OpenConnection();
+
+            // Получить идентификатор автомобиля, подлежащего удалению,
+            //и удалить запись о нем.
+            String sql = $"Delete from Inventory where CarId = '{id}'";
+            using (SqlCommand command = new SqlCommand(cmdText: sql, connection: this.sql_connection))
             {
-                OpenConnection();
-
-                // Получить идентификатор автомобиля, подлежащего удалению,
-                //и удалить запись о нем.
-                String sql = $"Delete from Inventory where CarId = '{id}'";
-                using (SqlCommand command = new SqlCommand(cmdText: sql, connection: this.sql_connection))
+                try
                 {
-                    try
-                    {
-                        command.CommandType = CommandType.Text;
-                        command.ExecuteNonQuery();
-                    }
-                    catch (SqlException ex)
-                    {
-                        Exception error = new Exception(message: "Sorry! That car is on order!", innerException: ex);
-                        // Этот автомобиль заказан!
-                        throw error;
-                    }
+                    command.CommandType = CommandType.Text;
+                    command.ExecuteNonQuery();
                 }
+                catch (SqlException ex)
+                {
+                    Exception error = new Exception(message: "Sorry! That car is on order!", innerException: ex);
+                    // Этот автомобиль заказан!
+                    throw error;
+                }
+            }
 
+            CloseConnection();
+        }
+
+
+        public void UpdateCarPetName(Int32 id, String new_pet_name)
+        {
+            OpenConnection();
+            // Получить идентификатор автомобиля для модификации дружественного имени,
+            String sql = $"Update Inventory Set PetName = '{new_pet_name}' Where CarId = ’{id}'";
+            using (SqlCommand command = new SqlCommand(cmdText: sql, connection: this.sql_connection))
+            {
+                command.ExecuteNonQuery();
+            }
+
+            CloseConnection();
+        }
+
+
+        public String LookUpPetName(Int32 car_ld)
+        {
+            OpenConnection();
+            String car_pet_name;
+            // Установить имя хранимой процедуры.
+            using (SqlCommand command = new SqlCommand(cmdText: "GetPetName", connection: this.sql_connection))
+            {
+                command.CommandType = CommandType.StoredProcedure;
+                // Входной параметр.
+                SqlParameter param = new SqlParameter
+                {
+                    ParameterName = "@carId",
+                    SqlDbType = SqlDbType.Int,
+                    Value = car_ld,
+                    Direction = ParameterDirection.Input
+                };
+                command.Parameters.Add(value: param);
+                // Выходной параметр,
+                param = new SqlParameter
+                {
+                    ParameterName = "@petName",
+                    SqlDbType = SqlDbType.Char,
+                    Size = 10,
+                    Direction = ParameterDirection.Output
+                };
+                command.Parameters.Add(value: param);
+                // Выполнить хранимую процедуру,
+                command.ExecuteNonQuery();
+                // Возвратить выходной параметр.
+                car_pet_name = (String)command.Parameters[parameterName: "@petName"].Value;
                 CloseConnection();
             }
 
+            return car_pet_name;
+        }
 
-            public void UpdateCarPetName(Int32 id, String new_pet_name)
+        public void ProcessCreditRisk(Boolean throw_ex, Int32 custId)
+        {
+            OpenConnection();
+            // Первым делом найти текущее имя по идентификатору клиента,
+            String f_name;
+            String l_name;
+            var cmd_select = new SqlCommand($"Select * from Customers where CustId = {custId}", this.sql_connection);
+            using (var data_reader = cmd_select.ExecuteReader())
             {
-                OpenConnection();
-                // Получить идентификатор автомобиля для модификации дружественного имени,
-                String sql = $"Update Inventory Set PetName = '{new_pet_name}' Where CarId = ’{id}'";
-                using (SqlCommand command = new SqlCommand(cmdText: sql, connection: this.sql_connection))
+                if (data_reader.HasRows)
                 {
-                    command.ExecuteNonQuery();
+                    data_reader.Read();
+                    f_name = (String)data_reader["FirstName"];
+                    l_name = (String)data_reader["LastName"];
                 }
-
-                CloseConnection();
-            }
-
-
-            public String LookUpPetName(Int32 car_ld)
-            {
-                OpenConnection();
-                String car_pet_name;
-                // Установить имя хранимой процедуры.
-                using (SqlCommand command = new SqlCommand(cmdText: "GetPetName", connection: this.sql_connection))
+                else
                 {
-                    command.CommandType = CommandType.StoredProcedure;
-                    // Входной параметр.
-                    SqlParameter param = new SqlParameter
-                    {
-                        ParameterName = "@carId",
-                        SqlDbType = SqlDbType.Int,
-                        Value = car_ld,
-                        Direction = ParameterDirection.Input
-                    };
-                    command.Parameters.Add(value: param);
-                    // Выходной параметр,
-                    param = new SqlParameter
-                    {
-                        ParameterName = "@petName",
-                        SqlDbType = SqlDbType.Char,
-                        Size = 10,
-                        Direction = ParameterDirection.Output
-                    };
-                    command.Parameters.Add(value: param);
-                    // Выполнить хранимую процедуру,
-                    command.ExecuteNonQuery();
-                    // Возвратить выходной параметр.
-                    car_pet_name = (String)command.Parameters[parameterName: "@petName"].Value;
                     CloseConnection();
+                    return;
                 }
-                return car_pet_name;
             }
+
+            // Создать объекты команд, которые представляют каждый шаг операции,
+            var cmd_remove = new SqlCommand($"Delete from Customers where CustId = {custId}", this.sql_connection);
+            var cmd_insert = new SqlCommand("Insert Into CreditRisks" + $"(FirstName, LastName) Values('{f_name}', '{l_name}')", this.sql_connection);
+            // Это будет получено из объекта подключения.
+            SqlTransaction tx = null;
+            try
+            {
+                tx = this.sql_connection.BeginTransaction();
+                // Включить команды в транзакцию,
+                cmd_insert.Transaction = tx;
+                cmd_remove.Transaction = tx;
+                // Выполнить команды,
+                cmd_insert.ExecuteNonQuery();
+                cmd_remove.ExecuteNonQuery();
+                // Эмулировать ошибку,
+                if (throw_ex)
+                {
+                    // Возникла ошибка, связанная с базой данных! Отказ транзакции...
+                    throw new Exception("Sorry! Database error! Tx failed...");
+                }
+
+                // Зафиксировать транзакцию!
+                tx.Commit();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                // Любая ошибка приведет к откату транзакции.
+                // Использовать условную операцию для проверки на предмет null,
+                tx?.Rollback();
+            }
+            finally
+            {
+                CloseConnection();
+            }
+        }
+
         #endregion
     }
-    }
+}
